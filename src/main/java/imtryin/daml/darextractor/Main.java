@@ -9,6 +9,8 @@ import com.daml.lf.typesig.PackageSignature;
 import com.daml.lf.typesig.reader.SignatureReader;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.github.victools.jsonschema.generator.*;
+import com.github.victools.jsonschema.module.jackson.JacksonModule;
 import imtryin.daml.darextractor.model.DamlTypeDecl;
 import scala.jdk.CollectionConverters;
 
@@ -19,15 +21,17 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class Main {
-    @Parameter(names = {"-a", "--allTypes"},
-            description = "Process all types from DAR file - not only templates and all referenced types, but also not referenced.",
-            order = 0)
+    @Parameter(order = 0, names = {"-j", "--jsonSchema"}, description = "Write JSON schema.")
+    private Boolean jsonSchema;
+
+    @Parameter(order = 1, names = {"-a", "--allTypes"},
+            description = "Process all types from DAR file - not only templates and all referenced types, but also not referenced.")
     private Boolean allTypes;
 
-    @Parameter(names = {"-i", "--indentOutput"}, description = "Indent output JSON.", order = 1)
+    @Parameter(order = 2, names = {"-i", "--indentOutput"}, description = "Indent output JSON.")
     private Boolean indentOutput;
 
-    @Parameter(names = {"-?", "-h", "--help"}, description = "Show usage.", order = 2, help = true)
+    @Parameter(order = 3, names = {"-?", "-h", "--help"}, description = "Show usage.", help = true)
     private boolean help;
 
     public static void main(String[] args) throws IOException {
@@ -43,12 +47,24 @@ public class Main {
             System.out.println();
 
             jCommander.usage();
+        } else if (main.jsonSchema != null && main.jsonSchema) {
+            main.writeJsonSchema();
         } else {
-            main.run();
+            main.convert();
         }
     }
 
-    private void run() throws IOException {
+    private void writeJsonSchema() throws IOException {
+        var schemaGeneratorConfig = new SchemaGeneratorConfigBuilder(SchemaVersion.DRAFT_2020_12, OptionPreset.PLAIN_JSON)
+                .with(new JacksonModule())
+                .build();
+        var jsonSchema = new SchemaGenerator(schemaGeneratorConfig)
+                .generateSchema(List.class, DamlTypeDecl.class);
+
+        System.out.println(indentOutput != null && indentOutput ? jsonSchema.toPrettyString() : jsonSchema.toString());
+    }
+
+    private void convert() throws IOException {
         byte[] inBytes = System.in.readAllBytes();
         var tempFile = File.createTempFile("dar", "dar");
         try (FileOutputStream fileOutputStream = new FileOutputStream(tempFile)) {
