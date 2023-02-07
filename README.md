@@ -1,0 +1,1 @@
+This utility is used to extract metadata from [Daml](https://docs.daml.com/) .dar archives. Later such metadata can be used to generate code on various languages to work with smart contracts within Daml ledger.
