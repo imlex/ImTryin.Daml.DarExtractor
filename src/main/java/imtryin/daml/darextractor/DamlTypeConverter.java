@@ -1,10 +1,12 @@
 package imtryin.daml.darextractor;
 
+import com.daml.lf.data.Ref;
 import imtryin.daml.darextractor.model.*;
 
 import com.daml.lf.typesig.Enum;
 import com.daml.lf.typesig.Record;
 import com.daml.lf.typesig.*;
+import scala.Option;
 import scala.jdk.CollectionConverters;
 
 import java.util.List;
@@ -68,6 +70,40 @@ public class DamlTypeConverter {
         }
 
         return damlTypeDecl;
+    }
+
+    public DamlTypeDecl convert(String typeName, DefInterface<Type> interfaceDecl, Consumer<String> onTypeRef) {
+        if (typeName.equals("95644d5c6ff8c9a433820d694916d86d5e94e1418880b66bf0b3e5103dbc0e09:Daml.Finance.Interface.Holding.Transferable:Transferable")) {
+            int i = 0;
+        }
+
+        DamlInterfaceDecl damlInterfaceDecl = new DamlInterfaceDecl();
+
+        Option<Ref.Identifier> viewType = interfaceDecl.viewType();
+        if (viewType.isDefined()) {
+            damlInterfaceDecl.setViewType(getTypeRef(viewType.get(), onTypeRef));
+        }
+
+        // ToDo: retroImplements
+        if (!interfaceDecl.retroImplements().isEmpty()) {
+            throw new RuntimeException();
+        }
+
+        damlInterfaceDecl.setChoices(
+                CollectionConverters.MapHasAsJava(interfaceDecl.choices()).asJava().entrySet().stream()
+                        .map(c -> {
+                            TemplateChoice<Type> templateChoice = c.getValue();
+                            return new DamlChoice(
+                                    c.getKey(),
+                                    templateChoice.consuming(),
+                                    getTypeRef(templateChoice.param(), onTypeRef),
+                                    getTypeRef(templateChoice.returnType(), onTypeRef));
+                        })
+                        .collect(Collectors.toList()));
+
+        damlInterfaceDecl.setName(typeName);
+
+        return damlInterfaceDecl;
     }
 
     private List<DamlField> getFields(DataType.GetFields<Type> dataType, Consumer<String> onTypeRef) {
@@ -172,6 +208,18 @@ public class DamlTypeConverter {
 
             damlTypeRef.setName(damlTypeName);
         }
+
+        return damlTypeRef;
+    }
+
+    private DamlTypeRef getTypeRef(Ref.Identifier identifier, Consumer<String> onTypeRef) {
+        DamlTypeRef damlTypeRef = new DamlTypeRef();
+        String damlTypeName = identifier.toString();
+        //log.debug("Processing " + damlTypeName);
+
+        damlTypeRef.setName(damlTypeName);
+
+        onTypeRef.accept(damlTypeName);
 
         return damlTypeRef;
     }

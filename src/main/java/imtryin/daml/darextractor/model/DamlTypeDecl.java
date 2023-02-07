@@ -13,7 +13,8 @@ import java.util.List;
         @JsonSubTypes.Type(value = DamlTemplateDecl.class, name = "template"),
         @JsonSubTypes.Type(value = DamlRecordDecl.class, name = "record"),
         @JsonSubTypes.Type(value = DamlEnumDecl.class, name = "enum"),
-        @JsonSubTypes.Type(value = DamlVariantDecl.class, name = "variant")
+        @JsonSubTypes.Type(value = DamlVariantDecl.class, name = "variant"),
+        @JsonSubTypes.Type(value = DamlInterfaceDecl.class, name = "interface")
 })
 public abstract class DamlTypeDecl {
 
